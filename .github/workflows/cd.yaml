@@ -1,46 +1,22 @@
 ---
-name: Validate data and update average
+name: CD - Compute and publish average
 
 permissions:
   contents: write
 
 on:
-  pull_request:
-    paths:
-      - "data/**"
-      - "ci_validate_students.py"
-      - "cd_compute_average.py"
-      - ".github/workflows/**"
   push:
     branches:
       - main
     paths:
       - "data/**"
-      - "ci_validate_students.py"
       - "cd_compute_average.py"
-      - ".github/workflows/**"
+      - ".github/workflows/cd.yaml"
 
 jobs:
-  ci:
-    name: CI - Validate students.csv
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repo
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Run CI validation
-        run: python ci_validate_students.py
-
-  cd:
+  compute-and-commit:
     name: CD - Compute and commit average_age.txt
-    needs: ci
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - name: Check out repo
@@ -54,7 +30,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Compute average age (CD)
+      - name: Compute average
         run: python cd_compute_average.py
 
       - name: Commit updated average_age.txt
