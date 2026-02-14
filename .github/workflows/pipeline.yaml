@@ -1,0 +1,66 @@
+---
+name: Validate data and update average
+
+permissions:
+  contents: write
+
+on:
+  pull_request:
+    paths:
+      - "data/**"
+      - "ci_validate_students.py"
+      - "cd_compute_average.py"
+      - ".github/workflows/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "data/**"
+      - "ci_validate_students.py"
+      - "cd_compute_average.py"
+      - ".github/workflows/**"
+
+jobs:
+  ci:
+    name: CI - Validate students.csv
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run CI validation
+        run: python ci_validate_students.py
+
+  cd:
+    name: CD - Compute and commit average_age.txt
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compute average age (CD)
+        run: python cd_compute_average.py
+
+      - name: Commit updated average_age.txt
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add average_age.txt
+          git commit -m "Recompute average age from students.csv" || echo "No changes to commit"
+          git push
